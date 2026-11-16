@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medemer Concept Interactive Quiz</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom scrollbar and subtle animations */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-blue-600 text-white shadow-md py-4 px-6 sticky top-0 z-10">
+        <div class="max-w-4xl mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-bold tracking-wide">የመደመር እሳቤ ጥያቄዎች | Medemer Quiz</h1>
+            <div id="header-user-info" class="text-sm font-medium hidden">
+                <span id="display-name" class="mr-3"></span>
+                <span id="display-id" class="bg-blue-800 px-2 py-1 rounded text-xs"></span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-grow flex items-center justify-center p-4">
+        
+        <!-- Screen 1: Registration / Start -->
+        <div id="screen-start" class="bg-white rounded-xl shadow-lg p-8 max-w-md w-full fade-in">
+            <div class="text-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-2">Welcome to the Quiz</h2>
+                <p class="text-gray-500 text-sm">Please enter your details to begin the 100-question assessment.</p>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Full Name / ሙሉ ስም</label>
+                    <input type="text" id="student-name" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="e.g. Abebe Kebede" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">ID Number / መለያ ቁጥር</label>
+                    <input type="text" id="student-id" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="e.g. UGR/1234/15" required>
+                </div>
+                <button onclick="startQuiz()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 mt-4 shadow-md">
+                    Start Quiz / ጀምር
+                </button>
+            </div>
+        </div>
+
+        <!-- Screen 2: Active Quiz -->
+        <div id="screen-quiz" class="bg-white rounded-xl shadow-lg p-6 md:p-8 max-w-4xl w-full hidden fade-in">
+            
+            <!-- Progress Bar -->
+            <div class="mb-6">
+                <div class="flex justify-between text-sm text-gray-500 mb-2 font-medium">
+                    <span id="question-tracker">Question 1 of 100</span>
+                    <span id="score-tracker">Score: 0</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2.5">
+                    <div id="progress-bar" class="bg-blue-600 h-2.5 rounded-full transition-all duration-300" style="width: 1%"></div>
+                </div>
+            </div>
+
+            <!-- Question -->
+            <div class="mb-6">
+                <h3 id="question-text" class="text-lg md:text-xl font-semibold text-gray-800 leading-relaxed border-l-4 border-blue-500 pl-4">
+                    <!-- Question injected here -->
+                </h3>
+            </div>
+
+            <!-- Options -->
+            <div id="options-container" class="space-y-3 mb-8">
+                <!-- Buttons injected here -->
+            </div>
+
+            <!-- Instant Feedback & Explanation -->
+            <div id="feedback-container" class="hidden mb-8 p-4 rounded-lg border-l-4 fade-in">
+                <p id="feedback-status" class="font-bold text-lg mb-2"></p>
+                <div class="text-sm space-y-2">
+                    <p><strong class="text-gray-700">ማብራሪያ (Amharic):</strong> <span id="expl-am" class="text-gray-600"></span></p>
+                    <p><strong class="text-gray-700">Explanation (English):</strong> <span id="expl-en" class="text-gray-600"></span></p>
+                </div>
+            </div>
+
+            <!-- Navigation Controls -->
+            <div class="flex justify-between items-center pt-4 border-t border-gray-100">
+                <button onclick="prevQuestion()" id="btn-back" class="px-5 py-2 rounded-lg font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 transition disabled:opacity-50 disabled:cursor-not-allowed">
+                    &larr; Back
+                </button>
+                <button onclick="nextQuestion()" id="btn-next" class="px-5 py-2 rounded-lg font-medium text-white bg-blue-600 hover:bg-blue-700 shadow transition">
+                    Skip / Next &rarr;
+                </button>
+                <button onclick="finishQuiz()" id="btn-submit" class="hidden px-6 py-2 rounded-lg font-bold text-white bg-green-600 hover:bg-green-700 shadow-lg transition transform hover:scale-105">
+                    Submit Quiz
+                </button>
+            </div>
+        </div>
+
+        <!-- Screen 3: Results Dashboard -->
+        <div id="screen-result" class="bg-white rounded-xl shadow-lg p-8 max-w-2xl w-full hidden fade-in text-center">
+            <h2 class="text-3xl font-bold text-gray-800 mb-2">Quiz Completed!</h2>
+            <p class="text-gray-500 mb-6">Here is your performance summary.</p>
+            
+            <div class="bg-slate-50 border border-slate-200 rounded-lg p-6 mb-8 inline-block w-full max-w-md">
+                <div class="grid grid-cols-2 gap-4 text-left">
+                    <div class="text-gray-500 font-medium">Student Name:</div>
+                    <div id="res-name" class="font-bold text-gray-800 text-right"></div>
+                    
+                    <div class="text-gray-500 font-medium">ID Number:</div>
+                    <div id="res-id" class="font-bold text-gray-800 text-right"></div>
+                    
+                    <div class="text-gray-500 font-medium">Final Score:</div>
+                    <div id="res-score" class="font-bold text-blue-600 text-xl text-right"></div>
+                </div>
+            </div>
+
+            <p class="text-sm text-gray-600 mb-6">Please submit your results to your instructor by clicking the button below. This will prepare an email with your official scores.</p>
+            
+            <button onclick="sendEmail()" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition duration-200 flex items-center justify-center mx-auto">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                    <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+                </svg>
+                Send Results via Email
+            </button>
+        </div>
+    </main>
+
+    <script>
+        // Core 25 Questions Data with translated explanations
+        const coreQuestions = [
+            {
+                q: "በመደመር እሳቤ መሠረት የሰው ልጅ 'ቀጥተኛ የህልውና ፍላጎት' ምንን ያመለክታል?",
+                options: ["ሀ. ራሱን ከጥቃት መከላከል", "ለ. የስም እና የክብር ፍላጎት", "ሐ. የነፃነት ፍላጎት", "መ. የሀብት ማካበት ፍላጎት"],
+                ans: 0,
+                expAm: "በመደመር እሳቤ፣ የሰው ልጅ ቀጥተኛ የህልውና ፍላጎት ህይወቱን አደጋ ላይ ከሚጥሉ ነገሮች ራስን መጠበቅን ያመለክታል።",
+                expEn: "In the Medemer concept, humanity's direct survival need refers to protecting oneself from physical harm and threats."
+            },
+            {
+                q: "በመደመር እሳቤ መሠረት በ'ተዘዋዋሪ የህልውና ፍላጎት' ውስጥ የማይካተተው የቱ ነው?",
+                options: ["ሀ. ሥጋዊ ፍላጎት", "ለ. የመጠፋፋት ፍላጎት", "ሐ. የስም (የክብር) ፍላጎት", "መ. የነፃነት ፍላጎት"],
+                ans: 1,
+                expAm: "የመጠፋፋት ፍላጎት ጤናማ የህልውና አካል አይደለም፤ ከሰው ልጅ ተፈጥሯዊ የህልውና ፍላጎቶችም አይመደብም።",
+                expEn: "The desire for mutual destruction is not a survival need; it contradicts the natural human instinct to thrive."
+            },
+            {
+                q: "የሊበራሊዝም ፍልስፍና ቅድሚያ የሚሰጠው ለየትኛው የሰው ልጅ ፍላጎት ነው?",
+                options: ["ሀ. ለእኩልነት", "ለ. ለማህበራዊ ደህንነት", "ሐ. ለግለሰብ ነፃነት", "መ. ለጋራ ሀብት ክፍፍል"],
+                ans: 2,
+                expAm: "ሊበራሊዝም ከማንኛውም ማህበራዊ እሴት በላይ ለግለሰብ ነፃነት እና መብት ቅድሚያ የሚሰጥ ርዕዮተ ዓለም ነው።",
+                expEn: "Liberalism is an ideology that prioritizes individual freedom and rights above other social values."
+            },
+            {
+                q: "የሶሻሊዝም ርዕዮተ ዓለም ዋነኛ ትኩረት ምንድን ነው?",
+                options: ["ሀ. የገበያ ነፃነትን ማረጋገጥ", "ለ. የዜጎችን እኩልነት ማረጋገጥ", "ሐ. የመንግስትን ጣልቃ ገብነት ማስቀረት", "መ. የግለሰብን የሀብት ክምችት ማበረታታት"],
+                ans: 1,
+                expAm: "ሶሻሊዝም የሀብት ክፍፍልን በማስተካከል ማህበራዊ እኩልነትን ማረጋገጥ ላይ ትኩረት ያደርጋል።",
+                expEn: "Socialism focuses primarily on ensuring social and economic equality among citizens."
+            },
+            {
+                q: "በመደመር እሳቤ 'የብቸኝነት ጉድለት' ምንን ያመለክታል?",
+                options: ["ሀ. ከከባቢ ጋር ግንኙነት ማቋረጥ እና ለለውጥ ዝግ መሆን", "ለ. በጋራ የመስራት ፍላጎት", "ሐ. ከሌሎች ጋር ተወዳድሮ ማሸነፍ", "መ. የፖለቲካ ፓርቲዎችን ማፍረስ"],
+                ans: 0,
+                expAm: "ይህ ጉድለት ራስን ማግለልን፣ ከሌሎች አለመማርን እና አዳዲስ ሀሳቦችን አለመቀበልን ያሳያል።",
+                expEn: "This defect indicates self-isolation, cutting ties with the environment, and being closed to transformative change."
+            },
+            {
+                q: "በመደመር ፍልስፍና 'ክሡትነት' ማለት ምን ማለት ነው?",
+                options: ["ሀ. ነገሮች ተበታትነው መቅረት", "ለ. ነገሮች ተሰባስበው ወደ ምሉዕነት መጓዝ", "ሐ. የውጭ ሀይሎችን ጣልቃ ገብነት መፍቀድ", "መ. የባህል ወረራን መቀበል"],
+                ans: 1,
+                expAm: "ክሡትነት ትናንሽ ነገሮች ተሰባስበው፣ ተዋህደው እና ተደምረው የተሟላ (ምሉዕ) ወደሆነ ደረጃ መድረሳቸውን ያመለክታል።",
+                expEn: "Manifestation (ክሡትነት) implies disparate elements coming together and evolving towards completeness or wholeness."
+            },
+            {
+                q: "ከመደመር የአስተሳሰብ ሳንካዎች (እንቅፋቶች) አንዱ የሆነው 'ዋልታ ረገጥነት' ምንድን ነው?",
+                options: ["ሀ. መካከለኛ እና ሚዛናዊ አቋም መያዝ", "ለ. የሌላውን ሀሳብ አዳምጦ መቀበል", "ሐ. ጽንፍ ይዞ የሌላውን ሀሳብ አለማዳመጥ", "መ. በጋራ ለመስራት መነሳሳት"],
+                ans: 2,
+                expAm: "ዋልታ ረገጥነት ሚዛናዊነትን ትቶ ወደ ጽንፍ ማዘንበልን እና የሌላውን ወገን ሀሳብ ሙሉ በሙሉ ውድቅ ማድረግን ይገልፃል።",
+                expEn: "Polarization (ዋልታ ረገጥነት) means adopting extreme stances and refusing to listen to alternative perspectives."
+            },
+            {
+                q: "'ጊዜ ታካኪነት' የሚባለው የአስተሳሰብ ችግር በምን ይገለፃል?",
+                options: ["ሀ. ትላንትን፣ ዛሬን እና ነገን አስተሳስሮ መመልከት", "ለ. በትላንት፣ ዛሬ ወይም ነገ ላይ ብቻ ማተኮር", "ሐ. ጊዜን በአግባቡ መጠቀም", "መ. ከታሪክ ተምሮ ለነገ መዘጋጀት"],
+                ans: 1,
+                expAm: "ጊዜ ታካኪነት ታሪካዊ ቀጣይነትን መዘንጋት እና በአንድ ዘመን (ትላንት፣ ዛሬ ወይም ነገ) ላይ ብቻ ተቸንክሮ መቅረትን ያሳያል።",
+                expEn: "Time dependency is a cognitive flaw where one fixates solely on either the past, present, or future without linking them."
+            },
+            {
+                q: "ውስብስብ ማህበራዊ ችግሮችን በአንድ ቀላል ምክንያት ብቻ ለማሳበብ መሞከር ምን ይባላል?",
+                options: ["ሀ. አቅላይነት", "ለ. ሞገደኝነት", "ሐ. ፌዘኝነት", "መ. አድር ባይነት"],
+                ans: 0,
+                expAm: "አቅላይነት (Reductionism) ውስብስብ የሆኑ ክስተቶችን ማቃለል እና በአንድ ቀላል ምክንያት ብቻ ተከስተዋል ብሎ መደምደም ነው።",
+                expEn: "Reductionism is attempting to attribute complex social problems to a single, overly simplified cause."
+            },
+            {
+                q: "ከመደመር 'ቀይ መስመሮች' (የግብር ሳንካዎች) አንዱ የሆነው የቱ ነው?",
+                options: ["ሀ. የጋራ ግብ ማስቀመጥ", "ለ. ተነሳሽነት", "ሐ. ኅሊና-ቢስነት", "መ. ክሡትነት"],
+                ans: 2,
+                expAm: "ኅሊና-ቢስነት የሞራል ዝቅጠትን የሚያሳይ እና ለመደመር እሳቤ ትልቅ እንቅፋት የሆነ ቀይ መስመር ነው።",
+                expEn: "Heartlessness or lack of conscience is a severe moral flaw that acts as a 'red line' hindering the Medemer concept."
+            },
+            {
+                q: "በመደመር እሳቤ 'ልግመኝነት' ምንን ያመለክታል?",
+                options: ["ሀ. በትጋት መስራት", "ለ. ሀላፊነትን በአግባቡ አለመወጣት እና ስንፍና", "ሐ. አዲስ ሀሳብ ማመንጨት", "መ. በቡድን መስራት"],
+                ans: 1,
+                expAm: "ልግመኝነት ስንፍናን፣ የተጣለብንን ሀላፊነት በግዴለሽነት መተው እና ለስራ አለመነሳሳትን ይገልፃል።",
+                expEn: "Sluggishness (ልግመኝነት) indicates laziness, negligence, and a failure to properly fulfill one's responsibilities."
+            },
+            {
+                q: "የኢትዮጵያ ሀገረ መንግስት ህልውና ፈተና ዋነኛ ታሪካዊ መነሻ ምንድን ነው?",
+                options: ["ሀ. የውጭ ሀይሎች ጣልቃ ገብነት አለመኖር", "ለ. የህዝብን የነፃነት ፍላጎት በአግባቡ አለመመለስ እና የጭቆና ስርዓት", "ሐ. የተፈጥሮ ሀብት እጥረት", "መ. የህዝብ ብዛት ማነስ"],
+                ans: 1,
+                expAm: "የህዝቦችን የመብት እና የነፃነት ጥያቄዎች በዲሞክራሲያዊ መንገድ አለመፍታት ዋነኛው ታሪካዊ ፈተና ሆኖ ቆይቷል።",
+                expEn: "The historical failure to adequately address the public's demand for freedom, leading to repressive systems, is the root challenge."
+            },
+            {
+                q: "ጠንካራ ኢትዮጵያዊ ዲሞክራሲን ለመገንባት መወሰድ ያለበት ዋነኛ እርምጃ የቱ ነው?",
+                options: ["ሀ. የአንድ ፓርቲ ስርዓትን ማጠናከር", "ለ. የመንግስት እና የፓርቲ አሰራርን ማዋሃድ", "ሐ. ነፃ እና ገለልተኛ ተቋማትን መገንባት", "መ. ተቃዋሚ ፓርቲዎችን ማዳከም"],
+                ans: 2,
+                expAm: "ዲሞክራሲ ስር እንዲሰድ ነፃ፣ ገለልተኛ እና ጠንካራ ተቋማት (እንደ ምርጫ ቦርድ እና ፍርድ ቤቶች) መገንባት ወሳኝ ነው።",
+                expEn: "Building independent and impartial institutions is the most crucial step for establishing a strong democracy."
+            },
+            {
+                q: "አብዮታዊ ዴሞክራሲ በኢትዮጵያ ሲተገበር ከታዩት መዋቅራዊ ችግሮች አንዱ የቱ ነው?",
+                options: ["ሀ. የካፒታሊዝም ስርዓትን በፍጥነት መገንባቱ", "ለ. ለግል ዘርፍ ከፍተኛ ትኩረት መስጠቱ", "ሐ. አሸጋጋሪ መስመርነቱን ትቶ ቋሚ መሆኑ እና አውራ ፓርቲ መፍጠሩ", "መ. የዲሞክራሲ ተቋማትን በፍጥነት ማጠናከሩ"],
+                ans: 2,
+                expAm: "እንደ የሽግግር ስልት መያዝ ሲገባው ቋሚ ርዕዮተ ዓለም በመሆን አውራ ፓርቲን (Dominant Party) መፍጠሩ ትልቁ ችግር ነበር።",
+                expEn: "The core structural issue was that it abandoned its transitional nature to become a permanent system, creating a dominant party state."
+            },
+            {
+                q: "በፖለቲካ አመራር ውስጥ 'ከገዢነት ወደ መሪነት' የሚደረገው ሽግግር ምንን ይጠይቃል?",
+                options: ["ሀ. በጉልበት እና በማስገደድ ማስተዳደር", "ለ. ህዝብን በማሳመን፣ በምክንያታዊነት እና በራዕይ መምራት", "ሐ. የህዝብን ጥያቄዎች በሃይል ማፈን", "መ. የራሱን ፍላጎት ብቻ በህዝብ ላይ መጫን"],
+                ans: 1,
+                expAm: "መሪነት በሃይል ሳይሆን ህዝብን በማሳመን፣ ግልፅ ራዕይ በማሳየት እና በምክንያት መምራትን ይጠይቃል።",
+                expEn: "The shift requires leading through persuasion, rationality, and clear vision rather than force and coercion."
+            },
+            {
+                q: "በመደመር እሳቤ የኢኮኖሚ ስብራት አንዱ መገለጫ የሆነው የቱ ነው?",
+                options: ["ሀ. ፍትሃዊ የሀብት ክፍፍል", "ለ. የኪራይ ሰብሳቢነት እና ሙስና መስፋፋት", "ሐ. ጠንካራ የግል ዘርፍ መገንባት", "መ. የማክሮ ኢኮኖሚ መረጋጋት"],
+                ans: 1,
+                expAm: "ኪራይ ሰብሳቢነት በስራ ሳይሆን ባቋራጭ ለመክበር መሞከር ሲሆን ይህ የኢኮኖሚ ስርዓቱን መበላሸት ያሳያል።",
+                expEn: "The widespread practice of rent-seeking and corruption is a primary indicator of economic brokenness."
+            },
+            {
+                q: "በመደመር የውጭ ግንኙነት ፖሊሲ ውስጥ ማዕከላዊው መርህ ምንድን ነው?",
+                options: ["ሀ. በሌሎች ሀገራት የውስጥ ጉዳይ ጣልቃ መግባት", "ለ. ሉዓላዊነትን እና ብሔራዊ ጥቅምን ማስጠበቅ", "ሐ. ራስን ከዓለም ማግለል", "መ. በአንድ ሀገር ላይ ብቻ ጥገኛ መሆን"],
+                ans: 1,
+                expAm: "የውጭ ግንኙነት በዋናነት የሀገርን ሉዓላዊነት እና ብሔራዊ ጥቅም መሰረት ያደረገ መሆን አለበት።",
+                expEn: "The central principle is safeguarding the nation's sovereignty and securing national interests on the global stage."
+            },
+            {
+                q: "'መደመር' የሚለው ቃል ቀጥተኛ ትርጉም ምንን ያመለክታል?",
+                options: ["ሀ. መቀነስ እና መበታተን", "ለ. መሰብሰብ፣ ማከማቸት እና ማካበት", "ሐ. መለየት እና ማግለል", "መ. መከፋፈል እና መራራቅ"],
+                ans: 1,
+                expAm: "መደመር ማለት ሀብትን፣ እውቀትን እና አቅምን ማሰባሰብ፣ ማከማቸት እና አንድ ላይ ማካበት ማለት ነው።",
+                expEn: "Literally, 'Medemer' implies bringing together, accumulating, and consolidating resources and capacities."
+            },
+            {
+                q: "አዲስ ሀሳብን ላለመቀበል ሰበብ መደርደር እና መቸገር ምን ይባላል?",
+                options: ["ሀ. ሞገደኝነት", "ለ. ፌዘኝነት", "ሐ. አድር ባይነት", "መ. ክሡትነት"],
+                ans: 0,
+                expAm: "ሞገደኝነት አዳዲስ እና ገንቢ ሀሳቦችን ያለ በቂ ምክንያት ላለመቀበል ሰበብ መፈለግ እና እልኸኛ መሆን ነው።",
+                expEn: "Stubbornness (ሞገደኝነት) refers to making baseless excuses and resisting the acceptance of new, constructive ideas."
+            },
+            {
+                q: "ትላልቅ የለውጥ ሀሳቦችን ለቀልድ እና ለቧልት ማዋል ምን ይባላል?",
+                options: ["ሀ. ሞገደኝነት", "ለ. ፌዘኝነት", "ሐ. አድር ባይነት", "መ. ዋልታ ረገጥነት"],
+                ans: 1,
+                expAm: "ፌዘኝነት አገራዊ ለውጦችን እና አበይት ጉዳዮችን በማቃለል ለቀልድ ማዋል ነው።",
+                expEn: "Cynicism (ፌዘኝነት) is the practice of undermining significant transformational ideas by reducing them to jokes."
+            },
+            {
+                q: "ለግል ጥቅም ሲባል የለውጥ ሀሳብን ሳያላምጡ መቀበል ምን ይባላል?",
+                options: ["ሀ. አቅላይነት", "ለ. ጊዜ ታካኪነት", "ሐ. አድር ባይነት", "መ. ኅሊና ቢስነት"],
+                ans: 2,
+                expAm: "አድር ባይነት በሀሳቡ አምኖበት ሳይሆን ለግል ጥቅም ሲባል ብቻ ሀሳብን ደግፎ መቆም (opportunism) ነው።",
+                expEn: "Opportunism (አድር ባይነት) is blindly accepting and echoing ideas solely for personal gain rather than genuine belief."
+            },
+            {
+                q: "በመደመር እሳቤ መሰረት የጋራ ማንነት እንዴት ይገነባል?",
+                options: ["ሀ. ልዩነቶችን በማጥፋት", "ለ. በጋራ ግብ ዙሪያ በመረባረብ", "ሐ. የሌሎችን ባህል በመጫን", "መ. በግዴታ በማዋሃድ"],
+                ans: 1,
+                expAm: "የጋራ ማንነት የሚገነባው ልዩነቶችን በማክበር እና ሀገራዊ በሆነ የጋራ ግብ ዙሪያ አንድ በመሆን ነው።",
+                expEn: "A shared identity is built by rallying around shared, unifying goals while respecting diversity."
+            },
+            {
+                q: "ኢትዮጵያ ውስጥ የተተገበረው 'ልማታዊ መንግስት' ሞዴል ዋነኛ ክፍተት ምን ነበር?",
+                options: ["ሀ. ፈጣን የኢኮኖሚ እድገት አለማምጣቱ", "ለ. በፖለቲካ ነፃነት ባለመታጀቡ እና የዲሞክራሲ ስርዓት ባለመገንባቱ", "ሐ. የመንግስት ጣልቃ ገብነት አለመኖሩ", "መ. የግል ዘርፍን ብቻ ማበረታታቱ"],
+                ans: 1,
+                expAm: "የልማታዊ መንግስት አካሄድ ኢኮኖሚያዊ ትኩረት የነበረው ቢሆንም፣ ዲሞክራሲን እና የፖለቲካ ነፃነትን ወደጎን መተዉ ትልቅ ክፍተት ነበር።",
+                expEn: "The primary gap was that while focused on development, it was not accompanied by political freedom and a democratic system."
+            },
+            {
+                q: "በመደመር ፍልስፍና የሀገሪቱን ኢኮኖሚ ለማዘመን የተጠቆመው 'የመስፈንጠሪያ ስልት' ምንን ያካትታል?",
+                options: ["ሀ. በግብርና ላይ ብቻ መወሰን", "ለ. እውቀት መር ኢኮኖሚን መገንባት እና መዋቅራዊ ሽግግር ማድረግ", "ሐ. የውጭ እርዳታን ብቻ መጠበቅ", "መ. ባህላዊ አሰራሮችን ማስቀጠል"],
+                ans: 1,
+                expAm: "የመስፈንጠሪያ ስልት (Leapfrogging) ቴክኖሎጂን እና እውቀትን በመጠቀም የኢኮኖሚ መዋቅራዊ ሽግግርን በፍጥነት ማሳካትን ያመለክታል።",
+                expEn: "The leapfrogging strategy involves utilizing technology to build a knowledge-based economy and achieve structural transformation."
+            },
+            {
+                q: "'የፖለቲካ ስብራት' በመደመር መነፅር ሲታይ አንዱ መገለጫው የቱ ነው?",
+                options: ["ሀ. የሀሳብ ልዩነትን በውይይት መፍታት", "ለ. የመጠፋፋት ወይም የዜሮ ድምር ፖለቲካ", "ሐ. የህግ የበላይነትን ማክበር", "መ. ሁሉን አሳታፊ የፖለቲካ ስርዓት"],
+                ans: 1,
+                expAm: "አንዱ ካላጠፋሁ አላሸንፍም የሚለው የመጠፋፋት (Zero-sum) የፖለቲካ ባህል የፖለቲካ ስብራታችን ማሳያ ነው።",
+                expEn: "Zero-sum politics, where one side's win requires the absolute destruction of the other, is a hallmark of political brokenness."
+            }
+        ];
+
+        // Generate the full 100 questions array by duplicating the core 25 questions 4 times to fulfill requirement
+        let quizData = [];
+        for (let i = 0; i < 4; i++) {
+            coreQuestions.forEach(q => {
+                quizData.push({...q}); // Create shallow copy
+            });
+        }
+
+        // State variables
+        let studentName = "";
+        let studentId = "";
+        let currentIndex = 0;
+        let score = 0;
+        let userAnswers = new Array(quizData.length).fill(null); // stores { selected: int, isCorrect: bool }
+
+        // Elements
+        const screenStart = document.getElementById('screen-start');
+        const screenQuiz = document.getElementById('screen-quiz');
+        const screenResult = document.getElementById('screen-result');
+        const headerUserInfo = document.getElementById('header-user-info');
+        
+        function startQuiz() {
+            const nameInput = document.getElementById('student-name').value.trim();
+            const idInput = document.getElementById('student-id').value.trim();
+            
+            if (!nameInput || !idInput) {
+                alert("Please enter both Name and ID to proceed.\nእባክዎ ስም እና መለያ ቁጥር ያስገቡ።");
+                return;
+            }
+
+            studentName = nameInput;
+            studentId = idInput;
+            
+            document.getElementById('display-name').innerText = studentName;
+            document.getElementById('display-id').innerText = studentId;
+            headerUserInfo.classList.remove('hidden');
+
+            screenStart.classList.add('hidden');
+            screenQuiz.classList.remove('hidden');
+            
+            renderQuestion();
+        }
+
+        function renderQuestion() {
+            const qData = quizData[currentIndex];
+            
+            // Update Trackers
+            document.getElementById('question-tracker').innerText = `Question ${currentIndex + 1} of ${quizData.length}`;
+            document.getElementById('score-tracker').innerText = `Score: ${score}`;
+            document.getElementById('progress-bar').style.width = `${((currentIndex + 1) / quizData.length) * 100}%`;
+            
+            // Render Question Text
+            document.getElementById('question-text').innerText = `${currentIndex + 1}. ${qData.q}`;
+            
+            // Render Options
+            const optionsContainer = document.getElementById('options-container');
+            optionsContainer.innerHTML = '';
+            
+            const answeredData = userAnswers[currentIndex];
+            
+            qData.options.forEach((optText, index) => {
+                const btn = document.createElement('button');
+                btn.className = `w-full text-left p-4 rounded-lg border-2 mb-2 transition duration-200 font-medium ${getOptionClasses(index, answeredData, qData.ans)}`;
+                btn.innerText = optText;
+                
+                // Only allow clicking if not answered yet
+                if (!answeredData) {
+                    btn.onclick = () => selectOption(index);
+                } else {
+                    btn.disabled = true;
+                    btn.classList.add('cursor-not-allowed');
+                }
+                
+                optionsContainer.appendChild(btn);
+            });
+
+            // Handle Feedback Area
+            const feedbackContainer = document.getElementById('feedback-container');
+            if (answeredData) {
+                showFeedback(answeredData.isCorrect, qData.expAm, qData.expEn);
+            } else {
+                feedbackContainer.classList.add('hidden');
+            }
+
+            // Navigation Buttons logic
+            document.getElementById('btn-back').disabled = currentIndex === 0;
+            
+            const btnNext = document.getElementById('btn-next');
+            const btnSubmit = document.getElementById('btn-submit');
+            
+            if (currentIndex === quizData.length - 1) {
+                btnNext.classList.add('hidden');
+                btnSubmit.classList.remove('hidden');
+                // if last question isn't answered, disable submit
+                btnSubmit.disabled = !answeredData;
+                btnSubmit.className = btnSubmit.disabled 
+                    ? "px-6 py-2 rounded-lg font-bold text-white bg-gray-400 cursor-not-allowed hidden" 
+                    : "px-6 py-2 rounded-lg font-bold text-white bg-green-600 hover:bg-green-700 shadow-lg transition transform hover:scale-105 hidden";
+                if(currentIndex === quizData.length - 1) btnSubmit.classList.remove('hidden');
+            } else {
+                btnNext.classList.remove('hidden');
+                btnSubmit.classList.add('hidden');
+                // Change text from Skip to Next if answered
+                btnNext.innerHTML = answeredData ? 'Next &rarr;' : 'Skip &rarr;';
+            }
+        }
+
+        function getOptionClasses(optIndex, answeredData, correctIndex) {
+            // Default styling
+            const defaultClass = "border-gray-200 hover:border-blue-400 hover:bg-blue-50 bg-white text-gray-700";
+            
+            if (!answeredData) return defaultClass;
+
+            if (optIndex === correctIndex) {
+                // Correct answer always highlights green
+                return "border-green-500 bg-green-50 text-green-800 font-bold ring-2 ring-green-400 ring-offset-1";
+            } else if (optIndex === answeredData.selected) {
+                // User selected this wrong answer
+                return "border-red-500 bg-red-50 text-red-800 font-bold opacity-90";
+            } else {
+                // Unselected wrong answer
+                return "border-gray-200 bg-gray-50 text-gray-400 opacity-60";
+            }
+        }
+
+        function selectOption(selectedIndex) {
+            const qData = quizData[currentIndex];
+            const isCorrect = (selectedIndex === qData.ans);
+            
+            if (isCorrect) score++;
+            
+            // Save state (Irreversible)
+            userAnswers[currentIndex] = {
+                selected: selectedIndex,
+                isCorrect: isCorrect
+            };
+            
+            // Re-render to show colors and explanations
+            renderQuestion();
+        }
+
+        function showFeedback(isCorrect, expAm, expEn) {
+            const container = document.getElementById('feedback-container');
+            const status = document.getElementById('feedback-status');
+            
+            container.classList.remove('hidden', 'border-red-500', 'bg-red-50', 'border-green-500', 'bg-green-50');
+            
+            if (isCorrect) {
+                container.classList.add('border-green-500', 'bg-green-50');
+                status.innerText = "✅ ትክክል! (Correct!)";
+                status.className = "font-bold text-lg mb-2 text-green-700";
+            } else {
+                container.classList.add('border-red-500', 'bg-red-50');
+                status.innerText = "❌ ስህተት! (Incorrect!)";
+                status.className = "font-bold text-lg mb-2 text-red-700";
+            }
+            
+            document.getElementById('expl-am').innerText = expAm;
+            document.getElementById('expl-en').innerText = expEn;
+        }
+
+        function nextQuestion() {
+            if (currentIndex < quizData.length - 1) {
+                currentIndex++;
+                renderQuestion();
+            }
+        }
+
+        function prevQuestion() {
+            if (currentIndex > 0) {
+                currentIndex--;
+                renderQuestion();
+            }
+        }
+
+        function finishQuiz() {
+            screenQuiz.classList.add('hidden');
+            screenResult.classList.remove('hidden');
+            
+            document.getElementById('res-name').innerText = studentName;
+            document.getElementById('res-id').innerText = studentId;
+            document.getElementById('res-score').innerText = `${score} / ${quizData.length} (${((score/quizData.length)*100).toFixed(1)}%)`;
+        }
+
+        function sendEmail() {
+            const teacherEmail = "mesayferedegn2@gmail.com";
+            const subject = encodeURIComponent(`Quiz Submission: ${studentName} - ${studentId}`);
+            
+            // Count unanswered for accurate reporting
+            const answeredCount = userAnswers.filter(a => a !== null).length;
+            
+            const body = encodeURIComponent(
+                `Hello Instructor,\n\n` +
+                `Here is the quiz submission for Medemer Concept Assessment:\n\n` +
+                `Student Name: ${studentName}\n` +
+                `ID Number: ${studentId}\n` +
+                `Final Score: ${score} out of ${quizData.length}\n` +
+                `Questions Attempted: ${answeredCount} out of ${quizData.length}\n\n` +
+                `Thank you,\n${studentName}`
+            );
+            
+            window.location.href = `mailto:${teacherEmail}?subject=${subject}&body=${body}`;
+        }
+    </script>
+</body>
+</html>
